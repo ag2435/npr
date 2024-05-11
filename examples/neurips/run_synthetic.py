@@ -10,9 +10,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.11.2
 #   kernelspec:
-#     display_name: goodpoints
+#     display_name: npr
 #     language: python
-#     name: python3
+#     name: npr
 # ---
 
 # %% [markdown]
@@ -57,6 +57,10 @@ parser.add_argument("--seed", "-s", default=123, type=int,
                     help="seed for random number generator when generating synthetic data")
 parser.add_argument("--ablation", default=0, type=int,
                     help="kernel ablation study", choices=[0, 1, 2])
+parser.add_argument('--no_swap', action='store_true', default=False,
+                    help='if set, do not perform swap step of kernel thinning')
+parser.add_argument('--dimension', '-d', default=1, type=int,
+                    help="X dimension of toy dataset")
 
 # %%
 args, opt = parser.parse_known_args()
@@ -76,18 +80,20 @@ use_cross_validation = False # args.use_crossval
 output_path = args.output_path
 seed = args.seed
 ablation = args.ablation
+no_swap = args.no_swap
+# d = args.dimension
+d= 2
 
 # %%
 # remaining imports
 import pandas as pd
-# from copy import deepcopy
-# from joblib import Parallel, delayed
 import pickle
 import numpy as np
 from tqdm import tqdm
 import os
 from time import time
 from numpy.linalg import LinAlgError
+import plotly.express as px
 
 from sklearn.metrics import mean_squared_error, accuracy_score
 from sklearn.model_selection import GridSearchCV
@@ -99,20 +105,27 @@ from npr.util_sample import ToyData
 
 # %%
 # sample synthetic data
+X_name = 'unif'
 toy_data_noise = ToyData(
-    X_name='unif', 
+    X_name=X_name, 
     f_name=ground_truth,
     noise=0.1,
-    d=1, 
-    k=8, #number of anchor points
+    d=d, 
+    k=3, #number of anchor points
 )
 
 # X_train, y_train = toy_data_noise.sample(n)
 X_test, y_test = toy_data_noise.sample(10000, seed=seed, shuffle=False)
-# print('debug: X_test>', X_test[0], 'y_test>', y_test[0])
+print(X_test.shape, y_test.shape)
 # validation set used for cross validation
 # set different seed so that val and test data and different
 X_val, y_val = toy_data_noise.sample(10000, seed=seed*2, shuffle=True)
+print(X_val.shape, y_val.shape)
+
+# %%
+# px.scatter(x=X_val[:,0], y=y_val,
+#             title=f'X={X_name}, f={ground_truth}, std[f]={np.std(y_val):.4f}',)
+px.scatter_3d(x=X_val[:,0], y=X_val[:,1], z=y_val, opacity=0.5,)
 
 # %%
 param_grid = {
@@ -137,7 +150,7 @@ for logn in range(logn_lo, logn_hi+1, 2):
     # keep kernel fixed
     model = estimator_factory(task, method, thin, 
                               kernel=kernel,
-                              ablation=ablation,)
+                              ablation=ablation, no_swap=no_swap)
     
     if model is None:
         print(f"Skipping {thin}-{method} with {kernel} kernel")
@@ -188,6 +201,7 @@ for logn in range(logn_lo, logn_hi+1, 2):
         sigma=best_params['sigma'],
         alpha=best_params['alpha'],
         ablation=ablation,
+        no_swap=no_swap,
     )
 
     scores = []

@@ -16,6 +16,14 @@ Albert: Copied from examples/gkt/util_sample.py
 '''
 ######## functions related to setting P and sampling from it ########
 
+def grid(k=100, d=1, mag=0.5):
+    """
+    Form grid of k^d points in [-mag, mag]^d
+    """
+    points_1d = np.linspace(-mag, mag, k)
+    mesh = np.meshgrid(*[points_1d for _ in range(d)])
+    points = np.stack(mesh, axis=-1).reshape(-1, d)
+    return points
 
 def sample(n, params_p, seed=None):
     """Returns n sample points drawn iid from a specified distribution
@@ -34,14 +42,20 @@ def sample(n, params_p, seed=None):
         sig = np.sqrt(params_p["var"])
         return(sig * rand.default_rng(seed).standard_normal(size=(n, params_p["d"])))
     elif name == "unif":
+        d = params_p["d"]
         sig = np.sqrt(params_p["var"])
-        # NOTE: Unif[-0.5,0.5] has variance 1/12
-        # Multiply by sqrt(12) to get unit variance
+        # NOTE: 
+        # - Unif[-1,1] has variance 1/3
+        # - Unif[-sqrt(3), sqrt(3)] has variance 3
+        # uncomment to use i.i.d. sampling
         # return(rand.default_rng(seed).random(size=(n, params_p["d"])) - 0.5) * np.sqrt(12) * sig
         
         # "sample" deterministic points to get rid of any randomness in the data
-        #   this is useful for debugging
-        return(np.linspace(-0.5, 0.5, n)[:, np.newaxis] * np.sqrt(12) * sig)
+        #   this is useful for debugging and precisely estimating population (i.e., test) loss
+        sqrt_3 = np.sqrt(3)
+        # generate at least n iid samples from Unif[-1,1]^d
+        k = int(np.ceil(np.power(n, 1/d)))
+        return(sig * grid(k, d, mag=sqrt_3))
     elif name == "unif-[0,1]":
         return np.linspace(0, 1, n)[:, np.newaxis]
     elif name == "mog":
@@ -248,11 +262,25 @@ def quadratic(X):
     return npl.norm(X, axis=-1)**2
 
 def sum_gauss(X, noise, k=10, seed=None):
-    d = X.shape[-1]
-    # anchor_points = np.linspace([-np.ones(d), np.ones(d)])
-    anchor_points = np.linspace(-1, 1, k)[:, np.newaxis]
-    # y = gauss(X, anchor_points, 0.125).sum(axis=-1) / len(anchor_points) + get_noise(len(X), noise)
-    y = gaussian(X, anchor_points, 0.25).sum(axis=-1) + get_noise(len(X), noise, seed)
+    """
+    Sum of m (= k^d) Gaussians
+        y = \sum_{i=1}^m \exp(-||x - a_i||^2 / (2\sigma^2)) + noise
+    \sigma = 0.25
+    a_i are evenly spaced between -1 and 1
+    noise is N(0, noise) i.i.d. for each x
+
+    Args:
+        X: input data (n,d), d>=1
+        noise: std of guassian noise
+        k: number of Gaussians
+        seed: random seed
+    
+    Returns:
+        y: sum of k^d Gaussians evaluated at X
+    """
+    n, d = X.shape
+    anchor_points = grid(k, d, mag=1.)
+    y = gaussian(X, anchor_points, 0.25).sum(axis=-1) + get_noise(n, noise, seed)
     return y
 
 def logistic(X, k=10, seed=None):
@@ -308,23 +336,11 @@ def get_Xy(X, y,
     Combine X with shape (n,d) and y with shape (n,) into a single ndarray of shape (n,d+1)
     If y is a one-hot vector for multiclass prediction, then y should have shape (n,k) and the output will have shape (n,d+k)
     """
-    # Want y to be between [0,1] 
-    #   no, not necessary since kernel will be psd for any values of y
-    #   we might still care about scale???
-    # if normalize_y:
-    #     y_normalized = y.astype(float)
-    #     y_normalized = y_normalized - y_normalized.min()
-    #     y_scale = np.max(y_normalized)
-    #     y_normalized /= y_scale
-    # else:
-    y_normalized = y
-    
-    if len(y_normalized.shape) == 1:
-        Xy_train = np.concatenate([X, y_normalized[...,np.newaxis]], axis=-1)
+    if len(y.shape) == 1:
+        Xy_train = np.concatenate([X, y[...,np.newaxis]], axis=-1)
     else:
-        assert len(y_normalized.shape) == 2
-        Xy_train = np.concatenate([X, y_normalized], axis=-1)
-    # Xy_train = np.stack(np.split(X, X.shape[-1], axis=-1) + [ y_normalized[...,np.newaxis], ], axis=-1).squeeze()
+        assert len(y.shape) == 2
+        Xy_train = np.concatenate([X, y], axis=-1)
     return Xy_train
 
 class ToyData(object):

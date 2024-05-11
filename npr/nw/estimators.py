@@ -3,7 +3,7 @@ from ..util_thin import sd_thin
 from ..util_sample import get_Xy
 # from ..rfm2.util_rfm_estimators import get_rfm_regressor
 
-from goodpoints.compress import compresspp_kt
+from goodpoints.compress import compresspp_kt, compress_kt
 
 from sklearn.base import RegressorMixin, ClassifierMixin
 from sklearn.utils.validation import check_array, check_is_fitted
@@ -50,7 +50,7 @@ class NadarayaWatsonThin(NadarayaWatsonBase):
         # else:
         # use one coreset
         coreset = self.thin(X,y)
-        # print('coreset size:', len(coreset))
+        # print('coreset size:', len(coreset), coreset.shape)
         super().fit(X[coreset], y[coreset], X2=X[coreset])
 
     def predict(self, X, return_all=False):
@@ -128,6 +128,7 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
                 ydim=1,
                 verbose=0, 
                 ablation=0,
+                no_swap=False,
                 **kwargs
                 ):
         super().__init__(kernel=kernel, sigma=sigma, 
@@ -136,6 +137,7 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
         
         self.ydim = ydim
         self.ablation = ablation
+        self.no_swap = no_swap
 
     def thin(self, X, y):
         if self.m == 0:
@@ -147,26 +149,29 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
         if self.ablation == 0:
             # use special kernel:
             #   k(x1,x2) * (1+ y1*y2)
-            coreset = compresspp_kt(
+            coreset = compress_kt(
                 X=get_Xy(X, y),
                 kernel_type=kernel_type,
                 k_params=np.array([self.sigma**2, 1], dtype=float), # use product kernel
+                # only_split=self.no_swap,
             )
         elif self.ablation == 1:
             # use base kernel on concatenated vector:
             #   k((x1,x2), (y1,y2))
-            coreset = compresspp_kt(
+            coreset = compress_kt(
                 X=get_Xy(X, y),
                 kernel_type=kernel_type,
                 k_params=np.array([self.sigma**2, 0], dtype=float), # use product kernel
+                # only_split=self.no_swap,
             )
         elif self.ablation == 2:
             # use base kernel on X only:
             #   k(x1,x2)
-            coreset = compresspp_kt(
+            coreset = compress_kt(
                 X=X,
                 kernel_type=kernel_type,
                 k_params=np.array([self.sigma**2, 0], dtype=float), # use product kernel
+                # only_split=self.no_swap,
             )
         else:
             raise ValueError(f"ablation {self.ablation} is not supported")
