@@ -56,7 +56,7 @@ parser.add_argument("--output_path", "-op", default='output', type=str,
 parser.add_argument("--seed", "-s", default=123, type=int,
                     help="seed for random number generator when generating synthetic data")
 parser.add_argument("--ablation", default=0, type=int,
-                    help="kernel ablation study", choices=[0, 1, 2])
+                    help="kernel ablation study", choices=[0, 1, 2, 3])
 parser.add_argument('--no_swap', action='store_true', default=False,
                     help='if set, do not perform swap step of kernel thinning')
 parser.add_argument('--dimension', '-d', default=1, type=int,
@@ -81,8 +81,7 @@ output_path = args.output_path
 seed = args.seed
 ablation = args.ablation
 no_swap = args.no_swap
-# d = args.dimension
-d= 2
+d = args.dimension
 
 # %%
 # remaining imports
@@ -111,7 +110,7 @@ toy_data_noise = ToyData(
     f_name=ground_truth,
     noise=0.1,
     d=d, 
-    k=3, #number of anchor points
+    k=1, #number of anchor points
 )
 
 # X_train, y_train = toy_data_noise.sample(n)
@@ -125,12 +124,20 @@ print(X_val.shape, y_val.shape)
 # %%
 # px.scatter(x=X_val[:,0], y=y_val,
 #             title=f'X={X_name}, f={ground_truth}, std[f]={np.std(y_val):.4f}',)
-px.scatter_3d(x=X_val[:,0], y=X_val[:,1], z=y_val, opacity=0.5,)
+# px.scatter_3d(x=X_val[:,0], y=X_val[:,1], z=y_val, opacity=0.5,)
 
 # %%
-param_grid = {
-    "sigma": np.logspace(-4, 0, 5),
-}
+if d == 1:
+    param_grid = {
+        "sigma": np.logspace(-4, 0, 5),
+    }
+elif d==4:
+    delta = 0.1
+    param_grid = {
+        "sigma": np.linspace(1., 2., 11),
+    }
+else:
+    raise ValueError(f"experiment with dimension {d} not tested")
 
 # %%
 # Run experiment (depending on experiment_type)
@@ -141,6 +148,8 @@ i = 0
 # only even logn (i.e., n is a power of 4)
 for logn in range(logn_lo, logn_hi+1, 2):
     trials = n_trials # (1 if method in ['full'] else n_trials)
+    if method in ['full'] and trials > 1:
+        print(f"Warning: trials={trials} for method {method} even though it's deterministic.")
 
     # get data
     X, y = toy_data_noise.sample(2**logn, seed=seed, shuffle=False)

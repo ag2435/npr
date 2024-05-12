@@ -5,7 +5,7 @@ from ..util_thin import get_coreset_size, log4
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 
 class KernelRidgeRPCholesky(BaseEstimator):
-    def __init__(self, kernel='gaussian', alpha=1, sigma=1, m=None):
+    def __init__(self, kernel='gaussian', alpha=1, sigma=1, m=None, **kwargs):
         assert kernel in ['gaussian', 'laplace'], f"kernel {kernel} is not supported"
         self.kernel = kernel
         self.alpha = alpha

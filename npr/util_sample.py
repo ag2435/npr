@@ -280,7 +280,7 @@ def sum_gauss(X, noise, k=10, seed=None):
     """
     n, d = X.shape
     anchor_points = grid(k, d, mag=1.)
-    y = gaussian(X, anchor_points, 0.25).sum(axis=-1) + get_noise(n, noise, seed)
+    y = gaussian(X, anchor_points, np.power(0.25,1/d)).sum(axis=-1) + get_noise(n, noise, seed)
     return y
 
 def logistic(X, k=10, seed=None):

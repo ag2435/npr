@@ -173,6 +173,16 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
                 k_params=np.array([self.sigma**2, 0], dtype=float), # use product kernel
                 # only_split=self.no_swap,
             )
+        elif self.ablation == 3:
+            # use loss kernel (from kernel ridge estimator):
+            #   k^2(x1,x2) + k(x1,x_2) * <y1,y2>
+            assert self.kernel == 'epanechnikov', \
+                f'only epanechnikov kernel is supported for ablation 3, , got {self.kernel}'
+            coreset = compress_kt(
+                X=get_Xy(X, y),
+                kernel_type=b"loss_epanechnikov",
+                k_params=np.array([self.sigma**2, 1], dtype=float), # use product kernel
+            )
         else:
             raise ValueError(f"ablation {self.ablation} is not supported")
         

@@ -167,6 +167,16 @@ class KernelRidgeKT(KernelRidgeThin):
                 kernel_type=self.kernel.encode(),
                 k_params=np.array([2*self.sigma**2], dtype=float),
             )
+        elif self.ablation == 3:
+            # use product kernel (from nadaraya-watson estimator):
+            #   k(x1,x2) * (1 + y1*y2)
+            assert self.kernel == 'gaussian', \
+                f"only gaussian kernel supported for ablation 3, got {self.kernel}"
+            coreset = compresspp_kt(
+                X=get_Xy(X, y),
+                kernel_type=b"prod_gaussian",
+                k_params=np.array([self.sigma**2, 1], dtype=float),
+            )
         return coreset
 
 class KernelRidgeSTRegressor(KernelRidgeST, RegressorMixin):
