@@ -161,7 +161,8 @@ cython_debug/
 
 *data/
 *DEPRECATED/
-*output/
+*output*/
+*output_scale/
 *slurm/
 *cachedir/
 

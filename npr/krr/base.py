@@ -26,7 +26,7 @@ class KernelRidgeBase(BaseEstimator):
     def __init__(self, kernel='laplace', alpha=1, sigma=1, postprocess=None, M=None, **kwargs):
         assert kernel in [
             'gaussian', 
-            # 'laplace', 
+            'laplace', 
             # 'sobolev', 
             # 'gaussian_M', 
             # 'laplace_M'

@@ -145,7 +145,13 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
             # Return coreset containing all indices
             return np.arange(X.shape[0], dtype=int)
         
-        kernel_type = self.kernel.encode() # e.g., "gaussian" -> b"gaussian"
+        if self.kernel == 'epanechnikov':
+            kernel_type = self.kernel.encode() # e.g., "gaussian" -> b"gaussian"
+        elif self.kernel == 'gaussian':
+            kernel_type = b"prod_gaussian"
+        else:
+            raise ValueError(f"kernel {self.kernel} is not supported for KT-NW estimator")
+
         if self.ablation == 0:
             # use special kernel:
             #   k(x1,x2) * (1+ y1*y2)

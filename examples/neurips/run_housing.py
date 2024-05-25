@@ -46,6 +46,8 @@ parser.add_argument("--output_path", "-op", default='output', type=str,
                     help="directory for storing output")
 parser.add_argument("--seed", "-s", default=123, type=int,
                     help="seed for random number generator when generating synthetic data")
+parser.add_argument('--ablation', default=0, type=int,
+                    help="kernel ablation study", choices=[0, 1, 2, 3])
 
 # %%
 args, opt = parser.parse_known_args()
@@ -63,6 +65,7 @@ n_jobs = 1
 use_cross_validation = False # args.use_crossval
 output_path = args.output_path
 seed = args.seed
+ablation = args.ablation
 
 # %%
 # remaining imports
@@ -108,7 +111,8 @@ trials = (1 if thin in ['full', 'rfm'] else n_trials)
 # STEP 1: Get data
 # use X_train, y_train, X_test, y_test from above
 model = estimator_factory(task, method, thin,
-                          kernel=kernel)
+                          kernel=kernel,
+                          ablation=ablation,)
 
 # STEP 2: Get optimal parameters through grid search
 # NOTE: we want to get rid of randomness in the Kernel Thinning (or Standard Thinning) routine
@@ -153,6 +157,7 @@ best_model = estimator_factory(
     kernel=kernel,
     sigma=best_params['sigma'],
     alpha=best_params['alpha'],
+    ablation=ablation,
 )
 print(best_model)
 
@@ -217,9 +222,10 @@ score_dir = os.path.join(
     'scores',
 )
 os.makedirs(score_dir, exist_ok=True)
+ablation_str = f"-ablation{ablation}" if ablation > 0 else ""
 score_file = os.path.join(
     score_dir,
-    f"{thin}-{method}-k={kernel}-dataset={dataset}-t{n_trials}.pkl"
+    f"{thin}-{method}-k={kernel}-dataset={dataset}-t{n_trials}{ablation_str}.pkl"
 )
 df = pd.DataFrame(results, columns=['_mean_train_score', '_mean_test_score', 
                                     '_mean_train_time', '_mean_test_time'])

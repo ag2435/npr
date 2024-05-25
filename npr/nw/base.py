@@ -21,8 +21,9 @@ class NadarayaWatsonBase(BaseEstimator):
 
     def __init__(self, kernel='epanechnikov', sigma=1, postprocess=None, M=None, **kwargs):
         assert kernel in [
-            # 'gaussian', 'laplace', 'sobolev', 
-            # 'gauss_M', 'laplace_M', 
+            'gaussian', 
+            # 'laplace', 'sobolev', 
+            # 'gaussian_M', 'laplace_M', 
             # 'box', 
             'epanechnikov',
             ]
@@ -52,7 +53,7 @@ class NadarayaWatsonBase(BaseEstimator):
         # Input validation
         X = check_array(X)
 
-        if self.kernel == 'gauss_M':
+        if self.kernel == 'gaussian_M':
             # print('76> M_gauss')
             # K = gauss(
             #     self.X_fit_, # (n, rank)
@@ -68,14 +69,14 @@ class NadarayaWatsonBase(BaseEstimator):
             #     X @ self.W.T, # (?, rank)
             #     self.sigma
             # )
-            K = laplacian_M(self.X_fit_, X, self.M_, self.sigma)
-            K2 = laplacian_M(self.X2_, X, self.M_, self.sigma)
-        elif self.kernel == 'gauss':
-            K = gauss(self.X_fit_, X, self.sigma)
-            K2 = gauss(self.X2_, X, self.sigma)
+            K = laplace_M(self.X_fit_, X, self.M_, self.sigma)
+            K2 = laplace_M(self.X2_, X, self.M_, self.sigma)
+        elif self.kernel == 'gaussian':
+            K = gaussian(self.X_fit_, X, self.sigma)
+            K2 = gaussian(self.X2_, X, self.sigma)
         elif self.kernel == 'laplace':
-            K = laplacian(self.X_fit_, X, self.sigma)
-            K2 = laplacian(self.X2_, X, self.sigma)
+            K = laplace(self.X_fit_, X, self.sigma)
+            K2 = laplace(self.X2_, X, self.sigma)
         elif self.kernel == 'sobolev':
             K = sobolev(self.X_fit_, X)
             K2 = sobolev(self.X2_, X)

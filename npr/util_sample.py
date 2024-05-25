@@ -250,9 +250,21 @@ def compute_params_p(args):
 def get_noise(n, noise, seed=None):
     return rand.default_rng(seed).normal(0,noise, size=(n,))
 
-def sin(X, noise, seed=None):
-    # Add 1 to sin so that it is always positive (plus or minus noise)
-    y = np.sin(npl.norm(X, axis=-1) * 2 * np.pi) + get_noise(len(X), noise, seed)
+def sin(X, noise, seed=None, scale=1):
+    n, d = X.shape
+    if d == 1:
+        y = scale * np.exp(X.flatten()) * np.sin(X.flatten() * 8*np.pi) + get_noise(n, noise, seed)
+    else:
+        y = scale * np.sin(npl.norm(X, axis=-1) * 8*np.pi) + get_noise(n, noise, seed)
+    return y
+
+def sinexp(X, noise, seed=None, scale=1):
+    n, d = X.shape
+    if d == 1:
+        y = scale * np.sin(X.flatten() * 8*np.pi) * np.exp(X.flatten()) + get_noise(n, noise, seed)
+    else:
+        raise ValueError(f'd={d} not supported')
+        y = scale * np.sin(npl.norm(X, axis=-1) * 8*np.pi) + get_noise(n, noise, seed)
     return y
 
 def stair(X, noise, seed=None):
@@ -261,7 +273,7 @@ def stair(X, noise, seed=None):
 def quadratic(X):
     return npl.norm(X, axis=-1)**2
 
-def sum_gauss(X, noise, k=10, seed=None):
+def sum_gauss(X, noise, k=None, seed=None, scale=1):
     """
     Sum of m (= k^d) Gaussians
         y = \sum_{i=1}^m \exp(-||x - a_i||^2 / (2\sigma^2)) + noise
@@ -279,8 +291,19 @@ def sum_gauss(X, noise, k=10, seed=None):
         y: sum of k^d Gaussians evaluated at X
     """
     n, d = X.shape
-    anchor_points = grid(k, d, mag=1.)
-    y = gaussian(X, anchor_points, np.power(0.25,1/d)).sum(axis=-1) + get_noise(n, noise, seed)
+    
+    if k:
+        # grid (k^d anchors)
+        print(f"sampling from sum-of-{k**d}-Gaussians with k={k}, d={d}")
+        anchor_points = grid(k, d, mag=1.)
+    else:
+        # bimodal mog
+        print(f"sampling from sum-of-2-Gaussians centered [1,1,...,1] and [-1,-1,...,-1] with d={d}")
+        anchor_points = np.concatenate([np.ones((1,d)), -np.ones((1,d))], axis=0)
+        # y = gaussian(X, anchor_points, np.power(0.25,1/d)).sum(axis=-1) + get_noise(n, noise, seed)
+
+    y = scale * gaussian(X, anchor_points, np.power(0.25/np.sqrt(3),1/d)).sum(axis=-1) + get_noise(n, noise, seed)
+    
     return y
 
 def logistic(X, k=10, seed=None):
@@ -306,12 +329,29 @@ def logistic(X, k=10, seed=None):
 
     return labels, f, prob
 
-def sum_laplace(X, noise, k=10, seed=None):
-    d = X.shape[-1]
-    # anchor_points = np.array([-np.ones(d), np.ones(d)])
-    anchor_points = np.linspace(-1, 1, k)[:, np.newaxis]
-    # y = laplacian(X, anchor_points, 0.125).sum(axis=-1) / len(anchor_points) + get_noise(len(X), noise)
-    y = laplace(X, anchor_points, 0.25).sum(axis=-1) + get_noise(len(X), noise, seed)
+def tanh(X, noise, seed=None, scale_x=1, scale_y=1):
+    """Tanh with x and y scaling"""
+    n,d = X.shape
+    if d == 1:
+        return scale_y * np.tanh(scale_x * X.flatten()) + get_noise(n, noise, seed)
+    else:
+        raise ValueError(f'd={d} not supported')
+
+def sum_laplace(X, noise, k=None, seed=None, scale=1):
+    n, d = X.shape
+    
+    if k:
+        # grid (k^d anchors)
+        print(f"sampling from sum-of-{k**d}-Laplace with k={k}, d={d}")
+        anchor_points = grid(k, d, mag=1.)
+    else:
+        # bimodal mog
+        print(f"sampling from sum-of-2-Laplace centered [1,1,...,1] and [-1,-1,...,-1] with d={d}")
+        anchor_points = np.concatenate([np.ones((1,d)), -np.ones((1,d))], axis=0)
+        # y = gaussian(X, anchor_points, np.power(0.25,1/d)).sum(axis=-1) + get_noise(n, noise, seed)
+
+    y = scale * laplace(X, anchor_points, np.power(0.25/np.sqrt(3),1/d)).sum(axis=-1) + get_noise(n, noise, seed) + 1
+    
     return y
 
 # def step(X, noise):
@@ -344,7 +384,8 @@ def get_Xy(X, y,
     return Xy_train
 
 class ToyData(object):
-    def __init__(self, X_name, f_name, X_var=1, d=1, noise=1, M=4, k=None) -> None:
+    def __init__(self, X_name, f_name, X_var=1, d=1, noise=1, M=4, k=None,
+                 scale=1,) -> None:
         self.X_name = X_name
         self.f_name = f_name
         self.X_var = X_var
@@ -352,6 +393,7 @@ class ToyData(object):
         self.noise = noise
         self.M = M
         self.k = k
+        self.scale = scale
 
         self.d, self.params_p, self.var_k = compute_params_p(args={
             'P'     : X_name,
@@ -381,17 +423,38 @@ class ToyData(object):
         # Create y data
 
         if self.f_name == 'sin':
-            y = sin(X, self.noise, seed)
+            y = sin(X, 
+                    self.noise, 
+                    seed=seed, 
+                    scale=self.scale)
+        elif self.f_name == 'sinexp':
+            y = sin(X, 
+                    self.noise, 
+                    seed=seed, 
+                    scale=self.scale)
+
         elif self.f_name == 'stair':
             y = stair(X, self.noise, seed)
         # elif self.f_name == 'quad':
         #     y = quadratic(X)
+
         elif self.f_name == 'sum_gauss':
-            y = sum_gauss(X, self.noise, self.k, seed)
+            y = sum_gauss(X, 
+                          self.noise, 
+                          k=self.k, 
+                          seed=seed,
+                          scale=self.scale)
+            
         elif self.f_name == 'logistic':
             y = logistic(X, self.k, seed)[0]
+        elif self.f_name == 'tanh':
+            y = tanh(X, self.noise, seed, scale_x=4, scale_y=self.scale)
         elif self.f_name == 'sum_laplace':
-            y = sum_laplace(X, self.noise, self.k, seed)
+            y = sum_laplace(X, 
+                            self.noise, 
+                            k=self.k, 
+                            seed=seed,
+                            scale=self.scale)
         # elif self.f_name == 'step':
         #     y = step(X, self.noise)
         elif self.f_name == 'dnc_paper':
