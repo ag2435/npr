@@ -11,7 +11,11 @@ import numpy as np
 
 class KernelRidgeRPCholesky(BaseEstimator):
     def __init__(self, kernel='gaussian', alpha=1, sigma=1, m=None, **kwargs):
-        assert kernel in ['gaussian', 'laplace'], f"kernel {kernel} is not supported"
+        assert kernel in [
+            'gaussian',
+            # 'laplace' # note they are using the L1 norm
+            'epanechnikov',
+        ], f"kernel {kernel} is not supported"
         self.kernel = kernel
         self.alpha = alpha
         self.sigma = sigma

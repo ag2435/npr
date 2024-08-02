@@ -1,3 +1,5 @@
+# This is a scratchpad for the synthetic experiments across different dimensions
+# (I think I actually used ./krr.sh and ./nw.sh to run the experiments for the submission, not this script)
 # 
 # %%%%%%%%%%%%%%%%%%%%%%%% Nadaraya-Watson Experiments %%%%%%%%%%%%%%%%%%%%%%%%
 # 

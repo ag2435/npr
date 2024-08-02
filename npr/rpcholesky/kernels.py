@@ -26,7 +26,7 @@ def GaussianKernel(x,y,bandwidth=1.0):
 
 def GaussianKernel_vec(vec_x,vec_y, bandwidth=1.0):
     # for vec_x, vec_y in R^{n*d}, return n values
-    dsts = np.linalg.norm(vec_x-vec_y, axis = -1)**2
+    dsts = np.linalg.norm(vec_x-vec_y, axis = -1) #**2
     return np.exp(-0.5*dsts**2/bandwidth**2)
 
 def GaussianKernel_mtx(xx,yy,bandwidth=1.0):
@@ -82,3 +82,28 @@ def MaternKernel_mtx(xx,yy,bandwidth,nu):
     else:
         sqrt2nu = np.sqrt(2.0*nu)
         return 1.0/(gamma(nu) * 2.0**(nu-1)) * (sqrt2nu * d) ** nu * kv(nu, sqrt2nu * d)
+
+# 
+# Epanechnikov kernel
+# 
+def EpanechnikovKernel(x,y,bandwidth=1.0):
+    # for single x,y in R^d
+    dst = np.linalg.norm(x-y)
+    dst /= bandwidth
+    return 0 if dst <= 1 else 0.75 * (1 - dst**2)
+
+def EpanechnikovKernel_vec(vec_x,vec_y, bandwidth=1.0):
+    # for vec_x, vec_y in R^{n*d}, return n values
+    dsts = np.linalg.norm(vec_x-vec_y, axis = -1) #**2
+    dsts /= bandwidth
+    return np.where(dsts <= 1, 0.75 * (1 - dsts**2), 0)
+
+def EpanechnikovKernel_mtx(xx,yy,bandwidth=1.0):
+    # xx in R^{nx*d} and yy in R^{ny*d} are both collection of points (two axis)
+    # return nx*ny values
+    # dsts = np.linalg.norm(xx[:, None, :] - yy[None, :, :], axis=-1)
+    dsts = euclidean_distances(xx,yy) # faster
+    dsts /= bandwidth
+    # return np.exp(-0.5*dsts**2/bandwidth**2)
+    return np.where(dsts <= 1, 0.75 * (1 - dsts**2), 0)
+    

@@ -132,7 +132,9 @@ class KernelMatrix(FunctionMatrix):
                 return partial(MaternKernel,bandwidth=bandwidth,nu=kwargs["nu"]), partial(MaternKernel_vec,bandwidth=bandwidth,nu=kwargs["nu"]), partial(MaternKernel_mtx,bandwidth=bandwidth,nu=kwargs["nu"])
             elif kernel == 'laplace':
                 return partial(LaplaceKernel,bandwidth=bandwidth), partial(LaplaceKernel_vec, bandwidth=bandwidth), partial(LaplaceKernel_mtx, bandwidth=bandwidth)
-                
+            elif kernel == 'epanechnikov':
+                from .kernels import EpanechnikovKernel, EpanechnikovKernel_vec, EpanechnikovKernel_mtx
+                return partial(EpanechnikovKernel,bandwidth=bandwidth), partial(EpanechnikovKernel_vec, bandwidth=bandwidth), partial(EpanechnikovKernel_mtx, bandwidth=bandwidth)
             else:
                 raise RuntimeError("Kernel name {} not recognized".format(kernel))
         else:

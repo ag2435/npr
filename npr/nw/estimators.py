@@ -1,5 +1,7 @@
 from .base import NadarayaWatsonBase
-from ..util_thin import sd_thin
+from ..util_thin import (sd_thin,
+                         log4,
+                         get_coreset_size,)
 from ..util_sample import get_Xy
 # from ..rfm2.util_rfm_estimators import get_rfm_regressor
 
@@ -204,4 +206,36 @@ class NadarayaWatsonSTClassifier(NadarayaWatsonST, ClassifierMixin):
     pass
 
 class NadarayaWatsonKTClassifier(NadarayaWatsonKT, ClassifierMixin):
+    pass
+
+# 
+# RPCholesky-NW Estimator
+#
+from ..rpcholesky.matrix import KernelMatrix
+from ..rpcholesky.rpcholesky import rpcholesky  
+
+class NadarayaWatsonRPCholesky(NadarayaWatsonThin):
+    """
+    Nadaraya-Watson estimator using RPCholesky pivot points as the thinned coreset
+    """
+    def thin(self, X, y):
+        
+        if self.m == 0:
+            # Zero halving rounds requested
+            # Return coreset containing all indices
+            arr_idx = np.arange(X.shape[0], dtype=int)
+        else:
+            n = len(X)
+            if self.m is None:
+                m = int(log4(n))
+            sample_num = get_coreset_size(n, m=m)
+
+            K = KernelMatrix(X, kernel = self.kernel, bandwidth = self.sigma)
+            sample_method = rpcholesky
+            lra = sample_method(K, sample_num)
+            arr_idx = lra.get_indices()
+        return arr_idx
+class NadarayaWatsonRPCholeskyClassifier(NadarayaWatsonRPCholesky, ClassifierMixin):
+    pass
+class NadarayaWatsonRPCholeskyRegressor(NadarayaWatsonRPCholesky, RegressorMixin):
     pass

@@ -20,6 +20,10 @@ def get_regressor(name, kernel, **kwargs):
     elif name=='kt':
         return NadarayaWatsonKTRegressor(kernel=kernel, **kwargs)
     
+    elif name=='rpcholesky':
+        from .estimators import NadarayaWatsonRPCholeskyRegressor
+        return NadarayaWatsonRPCholeskyRegressor(kernel=kernel, **kwargs)
+    
     else:
         raise ValueError(f'{name} is not supported')
     

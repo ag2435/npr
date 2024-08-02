@@ -288,6 +288,8 @@ for logn in range(logn_lo, logn_hi+1, 2):
         except LinAlgError:
             # print(f"LinAlgError: {e}")
             continue
+            # Note: sklearn automatically prints out a summary of errors during cross-validation
+            # including the number of fits that failed and the error type.
 
         # plot design points
         if i == 0: plot_design_points(logn, best_model, X, y)
