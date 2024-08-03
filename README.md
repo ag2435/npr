@@ -13,6 +13,11 @@ cd goodpoints
 pip install -e .
 ```
 
+Install RFM dependences:
+```
+conda install conda-forge::torchmetrics conda-forge::hickle
+```
+
 ## Estimators
 
 Nadaraya-Watson
@@ -21,11 +26,10 @@ Kernel ridge regression
 
 ## Kernels
 
-(Implemented in `goodpoints` repo, see above)
+Implemented in `goodpoints` repo, see above.
 
-Gaussian
-
-TODO:
+Examples:
+- Gaussian
 - Laplace
 - Boxcar
 - Epanechnikov

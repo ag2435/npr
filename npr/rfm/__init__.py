@@ -3,7 +3,7 @@ from .util_rfm_estimators import (RFMRegressor,
 
 def get_rfm_regressor(kernel, alpha=1e-3, sigma=10, iters=1, ydim=1, use_kt=False, postprocess=None,
                       diag=False, centering=False,):
-    assert kernel in ['gauss', 'laplace']
+    assert kernel in ['gaussian', 'laplace'], ValueError(f'kernel={kernel} is not supported')
     return RFMRegressor(
         kernel, 
         sigma=sigma, 
@@ -17,7 +17,7 @@ def get_rfm_regressor(kernel, alpha=1e-3, sigma=10, iters=1, ydim=1, use_kt=Fals
 
 def get_rfm_classifier(kernel, alpha=1e-3, sigma=10, iters=1, ydim=1, use_kt=False, postprocess='threshold',
                        diag=False, centering=False,):
-    assert kernel in ['gauss', 'laplace']
+    assert kernel in ['gaussian', 'laplace'], ValueError(f'kernel={kernel} is not supported')
     return RFMClassifier(
         kernel, 
         sigma=sigma, 

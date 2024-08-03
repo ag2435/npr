@@ -1,42 +1,27 @@
 from ..util_k import gaussian, laplace, gaussian_M, laplace_M, sobolev
+from .utils import get_feature_matrix
 
 from sklearn.base import BaseEstimator, RegressorMixin, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 import torch
 import numpy as np
-# persistent cache
-# from .. import memory
-
-# @memory.cache
-def get_feature_matrix(X, y, kernel, alpha=1, sigma=1, rfm_iters=1, val_data=None):
-    """
-    We put this as a separate function so that we can call it from child classes
-    """
-    from ..rfm import get_rfm_regressor
-
-    assert kernel in ['gaussian_M', 'laplace_M']
-    print('learning feature matrix...')
-    rfm = get_rfm_regressor(kernel[:-2], alpha=alpha, sigma=sigma, iters=rfm_iters)
-    rfm.fit(X, y, val_data=val_data)
-    M = rfm._model.M.numpy(force=True) # learned feature matrix
-    return M
 
 class KernelRidgeBase(BaseEstimator):
-
     def __init__(self, kernel='laplace', alpha=1, sigma=1, postprocess=None, M=None, **kwargs):
         assert kernel in [
             'gaussian', 
             'laplace', 
             # 'sobolev', 
-            # 'gaussian_M', 
-            # 'laplace_M'
+            'gaussian_M', 
+            'laplace_M'
         ], f'kernel={kernel} is not supported'
 
         self.kernel = kernel
         self.alpha = alpha
         self.sigma = sigma
         self.postprocess = postprocess
-
+        # user defined feature matrix
+        # if None, then we learn it during fit()
         self.M = M
 
     def fit(self, X, y):
@@ -48,12 +33,17 @@ class KernelRidgeBase(BaseEstimator):
         self.X_fit_, self.y_fit_ = X, y
 
         if self.kernel == 'gaussian_M':
-            self.M_ = get_feature_matrix(X, y, self.kernel, self.alpha, self.sigma) if self.M is None else self.M
+            # learn the feature matrix if not provided
+            # NOTE: in the case of KernelRidgeThin with RFM kernel, we learn during the feature matrix
+            # during the thin step, so self.M should be already set
+            # assert self.M is not None
+            self.M = get_feature_matrix(X, y, self.kernel, self.alpha, self.sigma) if self.M is None else self.M
             # print('M_gauss', M, self.M)
-            K = gaussian_M(X, X, self.M_, self.sigma)
+            K = gaussian_M(X, X, self.M, self.sigma)
         elif self.kernel == 'laplace_M':
-            self.M_ = get_feature_matrix(X, y, self.kernel, self.alpha, self.sigma) if self.M is None else self.M
-            K = laplace_M(X, X, self.M_, self.sigma)
+            # assert self.M is not None
+            self.M = get_feature_matrix(X, y, self.kernel, self.alpha, self.sigma) if self.M is None else self.M
+            K = laplace_M(X, X, self.M, self.sigma)
         elif self.kernel == 'gaussian':
             K = gaussian(X, X, self.sigma)
         elif self.kernel == 'laplace':
@@ -86,14 +76,14 @@ class KernelRidgeBase(BaseEstimator):
             #     self.sigma
             # )
             # print('M_', self.M_)
-            K = gaussian_M(self.X_fit_, X, self.M_, self.sigma)
+            K = gaussian_M(self.X_fit_, X, self.M, self.sigma)
         elif self.kernel == 'laplace_M':
             # K = laplacian(
             #     self.X_fit_, # (n, rank)
             #     X @ self.W.T, # (?, rank)
             #     self.sigma
             # )
-            K = laplace_M(self.X_fit_, X, self.M_, self.sigma)
+            K = laplace_M(self.X_fit_, X, self.M, self.sigma)
         elif self.kernel == 'gaussian':
             K = gaussian(self.X_fit_, X, self.sigma)
         elif self.kernel == 'laplace':

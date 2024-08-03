@@ -1,7 +1,7 @@
 from .base import KernelRidgeBase, get_feature_matrix
 from ..util_thin import sd_thin
 from ..util_sample import get_Xy
-# from ..rfm.util_rfm_estimators import get_rfm_regressor
+from .utils import get_feature_matrix
 
 from goodpoints.compress import compresspp_kt
 
@@ -28,8 +28,8 @@ class KernelRidgeThin(KernelRidgeBase):
         self.verbose = verbose
         
     def fit(self, X, y, **kwargs):
-        # if self.kernel in ['gauss_M', 'laplace_M']:
-        #     self.M = get_feature_matrix(X, y, kernel=self.kernel, alpha=self.alpha, sigma=self.sigma) if self.M is None else self.M
+        if self.kernel in ['gaussian_M', 'laplace_M']:
+            self.M = get_feature_matrix(X, y, kernel=self.kernel, alpha=self.alpha, sigma=self.sigma) if self.M is None else self.M
 
         # self.coresets_ = self.thin(X, y)
         # if self.use_dnc:
@@ -142,15 +142,26 @@ class KernelRidgeKT(KernelRidgeThin):
             # Zero halving rounds requested
             # Return coreset containing all indices
             return np.arange(X.shape[0], dtype=int)
-        
+        if self.kernel == 'gaussian_M':
+            assert self.ablation == 0, "ablation not supported for gaussian_M"
         if self.ablation == 0:
             # use special kernel:
-            #   k(x1,x2) * (1+ y1*y2)
-            coreset = compresspp_kt(
-                X=get_Xy(X, y),
-                kernel_type=f"loss_{self.kernel}".encode(),
-                k_params=np.array([self.sigma**2, 1], dtype=float),
-            )
+            #   k(x1,x2)^2 + y1*y2 * k(x1,x2)
+            if self.kernel == 'gaussian_M':
+                coreset = compresspp_kt(
+                    X=get_Xy(X, y),
+                    kernel_type=f"loss_{self.kernel}".encode(),
+                    k_params=np.concatenate([
+                        np.array([self.sigma**2, 1], dtype=float),
+                        self.M.flatten(),
+                    ]),
+                )
+            else:
+                coreset = compresspp_kt(
+                    X=get_Xy(X, y),
+                    kernel_type=f"loss_{self.kernel}".encode(),
+                    k_params=np.array([self.sigma**2, 1], dtype=float),
+                )
         elif self.ablation == 1:
             # use base kernel on concatenated vector:
             #   k((x1,x2), (y1,y2))

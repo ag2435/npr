@@ -18,10 +18,10 @@ from tqdm.contrib import tenumerate
 import hickle
 from copy import deepcopy
 
-# utils for kernel thinning
-from ..util_sample import get_Xy
-from ..util_k import get_kernel, to_regression_kernel
-from ..thin.util_thin import kt_thin2
+# # utils for kernel thinning
+# from ..util_sample import get_Xy
+# from ..util_k import get_kernel, to_regression_kernel
+# from ..thin.util_thin import kt_thin2
 
 class RecursiveFeatureMachine(torch.nn.Module):
 
@@ -58,40 +58,42 @@ class RecursiveFeatureMachine(torch.nn.Module):
             else:
                 self.M = torch.eye(centers.shape[-1], device=self.device, dtype=centers.dtype)
 
-        # use kernel thinning to select centers
-        if self.use_kt:
-            print('Using kernel thinning to select centers...')
-            d = centers.shape[-1]
-            var_k = self.bandwidth**2
+        # # use kernel thinning to select centers
+        # if self.use_kt:
+        #     print('Using kernel thinning to select centers...')
+        #     d = centers.shape[-1]
+        #     var_k = self.bandwidth**2
 
-            params_k_swap = {"name": self.kernel_name, "var": var_k, "d": int(d), "M": self.M.numpy(force=True)}
-            params_k_split = {"name": self.kernel_name, "var": var_k, "d": int(d), "M": self.M.numpy(force=True)}
+        #     params_k_swap = {"name": self.kernel_name, "var": var_k, "d": int(d), "M": self.M.numpy(force=True)}
+        #     params_k_split = {"name": self.kernel_name, "var": var_k, "d": int(d), "M": self.M.numpy(force=True)}
             
-            split_kernel = get_kernel(params_k_split)
-            swap_kernel = get_kernel(params_k_swap)
+        #     split_kernel = get_kernel(params_k_split)
+        #     swap_kernel = get_kernel(params_k_swap)
             
-            # assert (len(targets.shape)==1 and self.ydim==1) or \
-            #     targets.shape[1] == self.ydim, f"last dimension of targets.shape={y.shape} doesn't match self.ydim={self.ydim}"
-            ydim = 1 if len(targets.shape)==1 else targets.shape[-1]
+        #     # assert (len(targets.shape)==1 and self.ydim==1) or \
+        #     #     targets.shape[1] == self.ydim, f"last dimension of targets.shape={y.shape} doesn't match self.ydim={self.ydim}"
+        #     ydim = 1 if len(targets.shape)==1 else targets.shape[-1]
             
-            split_kernel = to_regression_kernel(split_kernel, ydim=ydim)
-            swap_kernel = to_regression_kernel(swap_kernel, ydim=ydim)
+        #     split_kernel = to_regression_kernel(split_kernel, ydim=ydim)
+        #     swap_kernel = to_regression_kernel(swap_kernel, ydim=ydim)
 
-            X_ = get_Xy(centers.numpy(force=True), targets.numpy(force=True))
+        #     X_ = get_Xy(centers.numpy(force=True), targets.numpy(force=True))
 
-            kt_coreset = kt_thin2(
-                X_, 
-                split_kernel, 
-                swap_kernel, 
-                m=None, # use sqrt(n) coreset setting
-                store_K=True
-            )
+        #     kt_coreset = kt_thin2(
+        #         X_, 
+        #         split_kernel, 
+        #         swap_kernel, 
+        #         m=None, # use sqrt(n) coreset setting
+        #         store_K=True
+        #     )
             
-            self.centers = centers[kt_coreset]
-            targets_ = targets[kt_coreset]
-        else:
-            self.centers = centers
-            targets_ = targets
+        #     self.centers = centers[kt_coreset]
+        #     targets_ = targets[kt_coreset]
+        # else:
+        #     self.centers = centers
+        #     targets_ = targets
+        self.centers = centers
+        targets_ = targets
 
         if self.fit_using_eigenpro and EIGENPRO_AVAILABLE:
             self.weights = self.fit_predictor_eigenpro(self.centers, targets_, **kwargs)
@@ -217,7 +219,7 @@ class RecursiveFeatureMachine(torch.nn.Module):
             p, d = samples.shape
             c = labels.shape[-1]
             M_batch_size = self._compute_optimal_M_batch(p, c, d, scalar_size=BYTES_PER_SCALAR)
-            print(f"Using batch size of {M_batch_size}")
+            # print(f"Using batch size of {M_batch_size}")
         
         batches = torch.randperm(n).split(M_batch_size)
         for i, bids in tenumerate(batches):

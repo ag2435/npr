@@ -38,7 +38,7 @@ class RFM(BaseEstimator):
             X_val_torch = torch.from_numpy(X_val).double()
             y_val_torch = torch.from_numpy(y_val.reshape(-1, self.ydim)).double()
 
-        if self.kernel == 'gauss':
+        if self.kernel == 'gaussian':
             model = GaussRFM(
                 reg=self.alpha, 
                 bandwidth=self.sigma, 
