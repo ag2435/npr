@@ -145,6 +145,30 @@ def get_svhn67_dataset(n_samples, normalize=True):
 
     return np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test)
 
+def get_susy_dataset():
+    """
+    Dataset information:
+    The data has been produced using Monte Carlo simulations. The first 8 features 
+    are kinematic properties measured by the particle detectors in the accelerator. 
+    The last ten features are functions of the first 8 features; these are high-level 
+    features derived by physicists to help discriminate between the two classes. 
+    There is an interest in using deep learning methods to obviate the need for 
+    physicists to manually develop such features. Benchmark results using Bayesian 
+    Decision Trees from a standard physics package and 5-layer neural networks and 
+    the dropout algorithm are presented in the original paper. The last 500,000 
+    examples are used as a test set.n about your data set.
+    """
+    import pandas as pd
+    # hardcode path to data for now
+    DATA_PATH = "~/kt_regression/src/npr/examples/neurips/data/SUSY.csv"
+    # load as csv
+    df = pd.read_csv(DATA_PATH, header=None)
+    # get first column of labels as integer
+    y = df.iloc[:,0].values.astype(int)
+    # get the rest of the columns as features
+    X = df.iloc[:,1:].values
+    return X, y
+
 def get_real_dataset(name): #, normalize=True, n_samples=20000):
     if name == 'housing':
         return get_housing_dataset()
@@ -157,6 +181,8 @@ def get_real_dataset(name): #, normalize=True, n_samples=20000):
     #     return get_svhn_dataset(n_samples, normalize)
     # elif name == 'svhn67':
     #     return get_svhn67_dataset(n_samples, normalize)
+    elif name == 'susy':
+        return get_susy_dataset()
     else:
         raise ValueError(f'dataset={name} not implememented')
     

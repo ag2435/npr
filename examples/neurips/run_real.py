@@ -28,12 +28,16 @@
 # %%
 from argparse import ArgumentParser
 parser = ArgumentParser()
+parser.add_argument("--dataset", "-d", default='housing', type=str,
+                    help="dataset to use", choices=['housing', 'susy'])
 parser.add_argument("--method", "-m", default='krr', type=str,
                     help="non-parametric regression method", choices=['nw', 'krr'])
 parser.add_argument("--thin", "-thin", default='full', type=str,
                     help="thinning method", choices=['full', 'st', 'kt', 'rpcholesky'])
 parser.add_argument("--kernel", "-k", default='gaussian', type=str,
-                    help="kernel function", choices=['epanechnikov', 'gaussian', 'laplace'])
+                    help="kernel function (append _M for RFM)", 
+                    choices=['epanechnikov', 'gaussian', 'laplace', 
+                             'gaussian_M', 'laplace_M']) # RFM kernels
 parser.add_argument("--sigma", "-sig", default=10, type=float,
                     help="bandwidth for kernel")
 parser.add_argument("--alpha", "-alpha", default=1e-3, type=float,
@@ -51,15 +55,21 @@ parser.add_argument('--ablation', default=0, type=int,
 
 # %%
 args, opt = parser.parse_known_args()
-dataset = 'housing'
+dataset = args.dataset
 k_fold = 5
 method = args.method
 thin = args.thin
 kernel = args.kernel
 sigma = args.sigma
 alpha = args.alpha
-task = 'regression'
-refit = 'neg_mean_squared_error'
+if dataset == 'housing':
+    task = 'regression'
+    refit = 'neg_mean_squared_error'
+elif dataset == 'susy':
+    task = 'classification'
+    refit = 'accuracy'
+else:
+    raise ValueError(f"invalid dataset: {dataset}")
 n_trials = args.n_trials
 n_jobs = 1
 use_cross_validation = False # args.use_crossval
@@ -88,9 +98,14 @@ from npr.util_load_data import get_real_dataset
 print(f"Loading {dataset} dataset")
 X, y = get_real_dataset(dataset)
 # print(X.shape, y.shape)
-# remove values corresponding to y>= 5
-X = X[y < 5]
-y = y[y < 5]
+# # remove values corresponding to y>= 5
+# X = X[y < 5]
+# y = y[y < 5]
+if dataset == 'susy':
+    print("Applying standard scaler to X data...")
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X = scaler.fit_transform(X)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, 
                                                     train_size=(k_fold-1)/k_fold, 
@@ -167,27 +182,39 @@ test_scores = []
 train_times = []
 test_times = []
 
+def classification_accuracy(labels, pred):
+    decision = pred.copy()
+    # implement classification rule
+    decision[decision > 0.5] = 1
+    decision[decision <= 0.5] = 0
+    return accuracy_score(labels, decision)
+
 pbar = tqdm(range(trials))
 for _ in pbar:
+    # import pdb; pdb.set_trace()
     # training
     start = time()
+    # NOTE: the first time, we will fit RFM kernel, so it will take longer
     best_model.fit(X_train, y_train)
     train_time = time() - start
 
     # testing
     # compute train score
-    train_pred = best_model.predict(X_train).squeeze()
+    # train_pred = best_model.predict(X_train).squeeze()
     # compute test score
     start = time()
     test_pred = best_model.predict(X_test).squeeze()
     test_time = time() - start
+    # import pdb; pdb.set_trace()
 
     if refit == 'neg_mean_squared_error':
         train_score = mean_squared_error(y_train, train_pred)
         test_score = mean_squared_error(y_test, test_pred)
     elif refit == 'accuracy':
-        train_score = 1- accuracy_score(y_train, train_pred)
-        test_score = 1- accuracy_score(y_test, test_pred)
+        # train_score = 1- accuracy_score(y_train, train_pred)
+        # test_score = 1- accuracy_score(y_test, test_pred)
+        train_score = np.nan # 1 - classification_accuracy(y_train, train_pred)
+        test_score = 1 - classification_accuracy(y_test, test_pred)
     else:
         raise ValueError(f"invalid refit metric: {refit}")
 
