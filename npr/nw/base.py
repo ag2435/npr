@@ -5,7 +5,8 @@ from ..util_k import (
     gaussian, laplace, sobolev,
     gaussian_M, laplace_M,
     # singular, box
-    box, epanechnikov
+    box, epanechnikov,
+    wendland,
 )
 # from .util_thin import sd_thin, kt_thin2
 # from .util_thin_dnc import sd_thin_dnc, kt_thin2_dnc, kt_thin1_dnc
@@ -26,6 +27,7 @@ class NadarayaWatsonBase(BaseEstimator):
             # 'gaussian_M', 'laplace_M', 
             # 'box', 
             'epanechnikov',
+            'wendland',
             ]
 
         self.kernel = kernel
@@ -89,6 +91,9 @@ class NadarayaWatsonBase(BaseEstimator):
         elif self.kernel == 'epanechnikov':
             K = epanechnikov(self.X_fit_, X, self.sigma)
             K2 = epanechnikov(self.X2_, X, self.sigma)
+        elif self.kernel == 'wendland':
+            K = wendland(self.X_fit_, X, self.sigma)
+            K2 = wendland(self.X2_, X, self.sigma)
         else:
             raise ValueError(f'kernel={self.kernel} is not supported')
         

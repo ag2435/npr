@@ -147,8 +147,8 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
             # Return coreset containing all indices
             return np.arange(X.shape[0], dtype=int)
         
-        if self.kernel == 'epanechnikov':
-            kernel_type = self.kernel.encode() # e.g., "gaussian" -> b"gaussian"
+        if self.kernel in ['epanechnikov', 'wendland']:
+            kernel_type = self.kernel.encode() # e.g., "epanechnikov" -> b"epanechnikov"
         elif self.kernel == 'gaussian':
             kernel_type = b"prod_gaussian"
         else:
@@ -184,11 +184,11 @@ class NadarayaWatsonKT(NadarayaWatsonThin):
         elif self.ablation == 3:
             # use loss kernel (from kernel ridge estimator):
             #   k^2(x1,x2) + k(x1,x_2) * <y1,y2>
-            assert self.kernel == 'epanechnikov', \
-                f'only epanechnikov kernel is supported for ablation 3, , got {self.kernel}'
+            assert self.kernel in ['epanechnikov', 'wendland'], \
+                f'only epanechnikov and wendland kernels are supported for ablation 3, , got {self.kernel}'
             coreset = compress_kt(
                 X=get_Xy(X, y),
-                kernel_type=b"loss_epanechnikov",
+                kernel_type=f"loss_{self.kernel}".encode(),
                 k_params=np.array([self.sigma**2, 1], dtype=float), # use product kernel
             )
         else:

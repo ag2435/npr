@@ -25,7 +25,12 @@
 # 
 # SUSY dataset (n=5,000,000, d=18)
 # 
-# python run_real.py -d susy -m krr -thin full -k gaussian -sig 4 -alpha 1e-3 -t 1 -op $1
-python run_real.py -d susy -m krr -thin st -k gaussian -sig 4 -alpha 1e-3 -op $1
-# python run_real.py -d susy -m krr -thin kt -k gaussian -sig 4 -alpha 1e-3 -op $1
-# python run_real.py -d susy -m krr -thin rpcholesky -k gaussian -sig 4 -alpha 1e-5 -op $1
+KERNEL=laplace
+SIGMA=10
+ALPHA=1e-1
+# python run_real.py -d susy -m krr -thin full -k $KERNEL -sig $SIGMA -alpha $ALPHA -t 1 -op $1
+# python run_real.py -d susy -m krr -thin st -k $KERNEL -sig $SIGMA -alpha $ALPHA -op $1
+python run_real.py -d susy -m krr -thin kt -k $KERNEL -sig $SIGMA -alpha $ALPHA -op $1
+
+# NOTE: RPCholesky doesn't even run
+# python run_real.py -d susy -m krr -thin rpcholesky -k gaussian -sig $SIGMA -alpha 1e-5 -op $1

@@ -52,6 +52,8 @@ parser.add_argument("--seed", "-s", default=123, type=int,
                     help="seed for random number generator when generating synthetic data")
 parser.add_argument('--ablation', default=0, type=int,
                     help="kernel ablation study", choices=[0, 1, 2, 3])
+# parser.add_argument('--force', action='store_true',
+#                     help="force overwrite of existing files")
 
 # %%
 args, opt = parser.parse_known_args()

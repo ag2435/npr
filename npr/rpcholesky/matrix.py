@@ -135,6 +135,9 @@ class KernelMatrix(FunctionMatrix):
             elif kernel == 'epanechnikov':
                 from .kernels import EpanechnikovKernel, EpanechnikovKernel_vec, EpanechnikovKernel_mtx
                 return partial(EpanechnikovKernel,bandwidth=bandwidth), partial(EpanechnikovKernel_vec, bandwidth=bandwidth), partial(EpanechnikovKernel_mtx, bandwidth=bandwidth)
+            elif kernel == 'wendland':
+                from .kernels import WendlandKernel, WendlandKernel_vec, WendlandKernel_mtx
+                return partial(WendlandKernel,bandwidth=bandwidth), partial(WendlandKernel_vec, bandwidth=bandwidth), partial(WendlandKernel_mtx, bandwidth=bandwidth)
             else:
                 raise RuntimeError("Kernel name {} not recognized".format(kernel))
         else:

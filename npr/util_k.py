@@ -603,6 +603,17 @@ def epanechnikov(samples, centers, bandwidth):
     kernel_mat = np.where(kernel_mat <= 1, 0.75 * (1 - kernel_mat**2), 0)
     return kernel_mat
 
+def wendland(samples, centers, bandwidth):
+    """
+    Wendland kernel: \kappa(u) = (1 - u)_+ for u in [-1, 1],
+    where u = ||x - y||_2 / bandwidth
+    """
+    kernel_mat = euclidean_distances(samples, centers, squared=False)
+    kernel_mat /= bandwidth
+    # indicator for kernel_mat <= 1
+    kernel_mat = np.where(kernel_mat <= 1, 1 - kernel_mat, 0)
+    return kernel_mat
+
 # With feature matrix M
 def euclidean_distances_M(samples, centers, M, squared=True):
     """

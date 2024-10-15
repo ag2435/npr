@@ -8,6 +8,7 @@ from goodpoints.compress import compresspp_kt
 from sklearn.base import RegressorMixin, ClassifierMixin
 from sklearn.utils.validation import check_array, check_is_fitted
 import numpy as np
+from time import time
 
 class KernelRidgeThin(KernelRidgeBase):
     """
@@ -49,7 +50,9 @@ class KernelRidgeThin(KernelRidgeBase):
         #         self.estimators_.append(estimator)
         # else:
         # use one coreset
+        start = time()
         coreset = self.thin(X,y)
+        print(f'thin time: {time()-start:.4f} s')
         # print('coreset size', len(coreset))
         super().fit(X[coreset], y[coreset])
 

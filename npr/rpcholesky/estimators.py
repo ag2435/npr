@@ -15,6 +15,7 @@ class KernelRidgeRPCholesky(BaseEstimator):
             'gaussian',
             # 'laplace' # note they are using the L1 norm
             'epanechnikov',
+            'wendland',
         ], f"kernel {kernel} is not supported"
         self.kernel = kernel
         self.alpha = alpha

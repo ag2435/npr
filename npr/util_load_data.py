@@ -160,7 +160,7 @@ def get_susy_dataset():
     """
     import pandas as pd
     # hardcode path to data for now
-    DATA_PATH = "~/kt_regression/src/npr/examples/neurips/data/SUSY.csv"
+    DATA_PATH = "/share/nikola/ag2435/kt_regression/src/npr/examples/neurips/data/SUSY.csv"
     # load as csv
     df = pd.read_csv(DATA_PATH, header=None)
     # get first column of labels as integer
